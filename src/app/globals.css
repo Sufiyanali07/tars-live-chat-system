@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 14% 96%;
+    --foreground: 220 20% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 20% 12%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 14% 92%;
+    --accent-foreground: 220 20% 12%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 142 76% 36%;
+    --radius: 0.75rem;
+    /* Chat: sent bubble (WhatsApp green) */
+    --chat-sent: 142 76% 36%;
+    --chat-sent-foreground: 0 0% 100%;
+    /* Chat: received bubble */
+    --chat-received: 0 0% 100%;
+    --chat-received-foreground: 220 20% 12%;
+    --chat-received-shadow: 220 14% 90%;
+  }
+
+  .dark {
+    --background: 220 18% 8%;
+    --foreground: 220 14% 96%;
+    --card: 220 16% 11%;
+    --card-foreground: 220 14% 96%;
+    --popover: 220 16% 11%;
+    --popover-foreground: 220 14% 96%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 220 14% 96%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 220 14% 18%;
+    --accent-foreground: 220 14% 96%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 12% 18%;
+    --input: 220 12% 18%;
+    --ring: 142 70% 45%;
+    --chat-sent: 142 55% 38%;
+    --chat-sent-foreground: 0 0% 100%;
+    --chat-received: 220 14% 18%;
+    --chat-received-foreground: 220 14% 96%;
+    --chat-received-shadow: 0 0% 0%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Chat message bubbles - WhatsApp/Instagram style with tail */
+.chat-bubble-sent {
+  background: hsl(var(--chat-sent));
+  color: hsl(var(--chat-sent-foreground));
+  border-radius: 18px 18px 4px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.dark .chat-bubble-sent {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.chat-bubble-received {
+  background: hsl(var(--chat-received));
+  color: hsl(var(--chat-received-foreground));
+  border-radius: 18px 18px 18px 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.dark .chat-bubble-received {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Animation delay utilities for typing dots */
+.delay-150 {
+  animation-delay: 150ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
