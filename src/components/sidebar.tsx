@@ -271,7 +271,9 @@ function CreateGroupDialog({
     });
   }
 
-  const handleCreate = async () => {
+  const handleCreate = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     const name = groupName.trim();
     if (!name || selectedIds.size === 0) {
       toast.error("Enter a group name and select at least one member.");
@@ -282,8 +284,9 @@ function CreateGroupDialog({
       await onCreateGroup(name, Array.from(selectedIds));
       setGroupName("");
       setSelectedIds(new Set());
-    } catch {
-      // toast handled by parent/sidebar
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create group";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -317,13 +320,18 @@ function CreateGroupDialog({
               ) : (
                 users.map((u) => (
                   <label
-                    key={u._id}
+                    key={u.clerkId}
                     className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/70"
                   >
                     <input
                       type="checkbox"
                       checked={selectedIds.has(u.clerkId)}
-                      onChange={() => toggleUser(u.clerkId)}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleUser(u.clerkId);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                       className="h-4 w-4 rounded border-input"
                     />
                     <Avatar className="h-8 w-8">
@@ -338,10 +346,11 @@ function CreateGroupDialog({
           </ScrollArea>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
           <Button
+            type="button"
             onClick={handleCreate}
             disabled={loading || !groupName.trim() || selectedIds.size === 0}
           >
