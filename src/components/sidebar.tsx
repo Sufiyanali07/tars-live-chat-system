@@ -23,6 +23,7 @@ import { UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserListItem } from "@/components/user-list-item";
+import { ConvexConnectionBanner } from "@/components/convex-connection-banner";
 import { ConvexUser } from "@/types";
 import { toast } from "sonner";
 
@@ -111,6 +112,9 @@ export function Sidebar({
         </div>
       </header>
 
+      <div className="shrink-0 px-3 pb-2">
+        <ConvexConnectionBanner />
+      </div>
       <div className="flex shrink-0 px-3 py-3">
         <div className="relative w-full">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
