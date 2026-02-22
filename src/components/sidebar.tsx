@@ -16,6 +16,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Search, MessageCircle, Users } from "lucide-react";
@@ -275,9 +276,8 @@ function CreateGroupDialog({
     });
   }
 
-  const handleCreate = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleCreate = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const name = groupName.trim();
     if (!name || selectedIds.size === 0) {
       toast.error("Enter a group name and select at least one member.");
@@ -306,19 +306,24 @@ function CreateGroupDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[85vh] flex flex-col">
+      <DialogContent className="max-h-[85vh] flex flex-col" aria-describedby="create-group-desc">
         <DialogHeader>
           <DialogTitle>Create group</DialogTitle>
+          <DialogDescription id="create-group-desc">
+            Enter a group name and select at least one member to add.
+          </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-4 py-2">
+        <form onSubmit={handleCreate} className="flex flex-col gap-4 py-2">
           <Input
             placeholder="Group name"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
             className="rounded-lg"
+            autoComplete="off"
+            aria-label="Group name"
           />
           <ScrollArea className="max-h-[240px] rounded-lg border border-border p-2">
-            <div className="space-y-1">
+            <div className="space-y-1" role="group" aria-label="Select members">
               {users.length === 0 ? (
                 <p className="py-4 text-center text-sm text-muted-foreground">No other users to add.</p>
               ) : (
@@ -330,13 +335,9 @@ function CreateGroupDialog({
                     <input
                       type="checkbox"
                       checked={selectedIds.has(u.clerkId)}
-                      onChange={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleUser(u.clerkId);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => toggleUser(u.clerkId)}
                       className="h-4 w-4 rounded border-input"
+                      aria-label={`Add ${u.fullName} to group`}
                     />
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={u.avatar} />
@@ -348,19 +349,18 @@ function CreateGroupDialog({
               )}
             </div>
           </ScrollArea>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleCreate}
-            disabled={loading || !groupName.trim() || selectedIds.size === 0}
-          >
-            {loading ? "Creating…" : "Create group"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || !groupName.trim() || selectedIds.size === 0}
+            >
+              {loading ? "Creating…" : "Create group"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
