@@ -4,28 +4,37 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ConvexUser } from "@/types";
-import { MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 
 type UserListItemProps = {
   user: ConvexUser;
   onStartChat: () => void;
+  isLoading?: boolean;
   className?: string;
 };
 
 export function UserListItem({
   user,
   onStartChat,
+  isLoading = false,
   className,
 }: UserListItemProps) {
+  const handleStartChat = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isLoading) return;
+    onStartChat();
+  };
+
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => onStartChat()}
+      onClick={handleStartChat}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onStartChat();
+          if (!isLoading) onStartChat();
         }
       }}
       className={cn(
@@ -55,15 +64,17 @@ export function UserListItem({
         type="button"
         size="sm"
         variant="default"
-        className="shrink-0 gap-1.5 rounded-full"
-        onClick={(e) => {
-          e.stopPropagation();
-          onStartChat();
-        }}
+        disabled={isLoading}
+        className="shrink-0 gap-1.5 rounded-full pointer-events-auto"
+        onClick={handleStartChat}
         aria-label={`Start chat with ${user.fullName}`}
       >
-        <MessageCircle className="h-4 w-4" />
-        <span className="hidden sm:inline">Message</span>
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <MessageCircle className="h-4 w-4" />
+        )}
+        <span className="hidden sm:inline">{isLoading ? "Starting…" : "Message"}</span>
       </Button>
     </div>
   );

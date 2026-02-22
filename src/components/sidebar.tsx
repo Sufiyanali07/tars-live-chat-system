@@ -10,7 +10,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Search, MessageCircle, Users } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -29,9 +37,12 @@ export function Sidebar({
 }: SidebarProps) {
   const { user } = useUser();
   const [search, setSearch] = useState("");
+  const [startingChatWithClerkId, setStartingChatWithClerkId] = useState<string | null>(null);
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const conversations = useQuery(api.conversationsWithPreview.listWithPreview);
   const users = useQuery(api.users.list);
   const getOrCreateDM = useMutation(api.conversations.getOrCreateDM);
+  const createGroup = useMutation(api.conversations.createGroup);
   const myClerkId = user?.id ?? "";
 
   const filteredUsers =
@@ -59,6 +70,7 @@ export function Sidebar({
     return other?.avatar ?? null;
   };
   async function startChatWithUser(otherClerkId: string): Promise<string | null> {
+    setStartingChatWithClerkId(otherClerkId);
     try {
       const id = await getOrCreateDM({ otherClerkId });
       return id;
@@ -66,6 +78,8 @@ export function Sidebar({
       const message = err instanceof Error ? err.message : "Could not start chat";
       toast.error(message);
       return null;
+    } finally {
+      setStartingChatWithClerkId(null);
     }
   }
   type ConversationWithPreview = NonNullable<typeof conversations>[number];
@@ -128,6 +142,7 @@ export function Sidebar({
                 <UserListItem
                   key={u._id}
                   user={u as ConvexUser}
+                  isLoading={startingChatWithClerkId === u.clerkId}
                   onStartChat={() => {
                     startChatWithUser(u.clerkId).then((id) => {
                       if (id) onSelectConversation(id);
@@ -141,6 +156,15 @@ export function Sidebar({
       ) : (
         <ScrollArea className="flex-1">
           <div className="space-y-0.5 p-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="mb-2 w-full justify-start gap-2 rounded-2xl border-dashed"
+              onClick={() => setGroupDialogOpen(true)}
+            >
+              <Users className="h-4 w-4" />
+              New group
+            </Button>
             {!conversations ? (
               <div className="space-y-2 p-2">
                 <Skeleton className="h-16 w-full rounded-2xl" />
@@ -205,6 +229,126 @@ export function Sidebar({
           </div>
         </ScrollArea>
       )}
+
+      <CreateGroupDialog
+        open={groupDialogOpen}
+        onOpenChange={setGroupDialogOpen}
+        users={users?.filter((u) => u.clerkId !== myClerkId) ?? []}
+        onCreateGroup={async (name, memberClerkIds) => {
+          const id = await createGroup({ name, memberClerkIds });
+          onSelectConversation(id);
+          setGroupDialogOpen(false);
+          toast.success("Group created");
+        }}
+      />
     </div>
+  );
+}
+
+type CreateGroupDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  users: ConvexUser[];
+  onCreateGroup: (name: string, memberClerkIds: string[]) => Promise<void>;
+};
+
+function CreateGroupDialog({
+  open,
+  onOpenChange,
+  users,
+  onCreateGroup,
+}: CreateGroupDialogProps) {
+  const [groupName, setGroupName] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false);
+
+  const toggleUser = (clerkId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(clerkId)) next.delete(clerkId);
+      else next.add(clerkId);
+      return next;
+    });
+  }
+
+  const handleCreate = async () => {
+    const name = groupName.trim();
+    if (!name || selectedIds.size === 0) {
+      toast.error("Enter a group name and select at least one member.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await onCreateGroup(name, Array.from(selectedIds));
+      setGroupName("");
+      setSelectedIds(new Set());
+    } catch {
+      // toast handled by parent/sidebar
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      setGroupName("");
+      setSelectedIds(new Set());
+    }
+    onOpenChange(next);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Create group</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-4 py-2">
+          <Input
+            placeholder="Group name"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            className="rounded-lg"
+          />
+          <ScrollArea className="max-h-[240px] rounded-lg border border-border p-2">
+            <div className="space-y-1">
+              {users.length === 0 ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">No other users to add.</p>
+              ) : (
+                users.map((u) => (
+                  <label
+                    key={u._id}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/70"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(u.clerkId)}
+                      onChange={() => toggleUser(u.clerkId)}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={u.avatar} />
+                      <AvatarFallback className="text-xs">{u.fullName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <span className="truncate text-sm font-medium">{u.fullName}</span>
+                  </label>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreate}
+            disabled={loading || !groupName.trim() || selectedIds.size === 0}
+          >
+            {loading ? "Creating…" : "Create group"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
